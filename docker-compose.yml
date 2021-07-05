@@ -1,0 +1,42 @@
+version: '3.4'
+
+services:
+  minimalapiactor:
+    image: ${DOCKER_REGISTRY-}minimalapiactor
+    build:
+      context: .
+      dockerfile: MinimalApiActor/Dockerfile
+
+  minimalapiactor-dapr:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+     "-app-id", "minimalapiactor",
+     "-app-port", "80",
+     "-placement-host-address", "placement:6050" # Dapr's placement service can be reach via the docker DNS entrys
+     ]
+    volumes:
+        - "./components/:/components" # Mount our components folder for the runtime to use
+    depends_on:
+      - minimalapiactor
+    network_mode: "service:minimalapiactor" # Attach the minimalapiactor-dapr service to the minimalapiactor network namespace
+
+  minimalapiactorclient:
+    image: ${DOCKER_REGISTRY-}minimalapiactorclient
+    build:
+      context: .
+      dockerfile: MinimalApiActorClient/Dockerfile
+
+  minimalapiactorclient-dapr:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+     "-app-id", "minimalapiactorclient",
+     "-app-port", "80",
+     "-placement-host-address", "placement:6050" # Dapr's placement service can be reach via the docker DNS entrys
+     ]
+    volumes:
+        - "./components/:/components" # Mount our components folder for the runtime to use
+    depends_on:
+      - minimalapiactor
+    network_mode: "service:minimalapiactorclient" # Attach the minimalapiactorclient-dapr service to the minimalapiactorclient network namespace
